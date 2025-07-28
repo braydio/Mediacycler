@@ -1,5 +1,3 @@
----
-
 ## Disk-Limited Media Rotation with Cached Imports
 
 ### ✅ Directory/Quota Setup
