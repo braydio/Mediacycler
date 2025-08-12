@@ -1,4 +1,13 @@
+"""Fetch curated lists from MDBList with Trakt fallback.
+
+This module retrieves movie and show identifiers from MDBList. If the
+service is unavailable, it falls back to pulling trending items from the
+Trakt API.
+"""
+
 import requests
+
+from trakt_fetcher import get_trending_items
 
 MDBLIST_BASE_URL = "https://mdblist.com/api"
 USER = "hd-movie-lists"
@@ -17,7 +26,15 @@ def get_items_from_list(slug):
 
 
 def get_all_items_from_all_lists():
-    lists = get_all_lists()
+    """Yield all items from MDBList lists or Trakt if MDBList fails."""
+    try:
+        lists = get_all_lists()
+    except Exception as e:
+        print(f"⚠️ MDBList unavailable: {e}")
+        print("➡️ Falling back to Trakt trending items")
+        yield from get_trending_items()
+        return
+
     for lst in lists:
         slug = lst["slug"]
         title = lst["title"]

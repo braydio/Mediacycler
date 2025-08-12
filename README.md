@@ -6,14 +6,14 @@ MediaCycler is a media management suite that rotates libraries under disk quotas
 
 **What it does**: MediaCycler provides intelligent media lifecycle management by automatically discovering, importing, and rotating content within defined storage limits. It maintains quality through selective imports, health checks, and on-demand transcoding, while making your media easily accessible through IPTV channel endpoints.
 
-**Key Integrations**: Seamlessly integrates with Radarr, Sonarr, Jellyfin, MDBList, Threadfin, Tunarr, and Trailarr to create a complete media automation ecosystem.
+**Key Integrations**: Seamlessly integrates with Radarr, Sonarr, Jellyfin, MDBList, Trakt, Threadfin, Tunarr, and Trailarr to create a complete media automation ecosystem.
 
 **Philosophy**: Import one at a time to maintain quality and storage limits. Make streaming easy via IPTV endpoints. Quality over quantity, with intelligent curation and automatic cleanup to keep your media collection fresh and within disk constraints.
 
 ## Key Features
 
 - **Disk quota-aware media rotation (Movies and TV)** with cached import tracking using SQLite database
-- **Automated list ingestion from MDBList** "HD Movie Lists" for curated content discovery
+- **Automated list ingestion from MDBList** "HD Movie Lists" for curated content discovery with fallback to Trakt trending lists
 - **Radarr/Sonarr add, search, and cleanup flows** with automatic removal when quota exceeded
 - **Health checks of media with ffmpeg** and on-demand transcoding via Encodarr webhook integration
 - **Jellyfin utility scripts** including genre tagging from folder layout and collection management
@@ -161,7 +161,7 @@ export SONARR_LANGUAGE_PROFILE_ID="1"
   - Transcoded output: `/mnt/netstorage/Media/Transcoded`
   - transcode.sh path: `/app/transcode.sh` if containerized; otherwise point to `Encodarr/transcode.sh`
 
-- **MDBList pulls from user hd-movie-lists (no API key currently used).**
+- **MDBList pulls from user hd-movie-lists (no API key currently used); fallback to Trakt trending lists requires `TRAKT_CLIENT_ID`.**
 
 ## Secrets
 
