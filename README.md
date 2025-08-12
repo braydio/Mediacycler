@@ -104,6 +104,7 @@ MediaCycler/
 ## Installation
 
 ### Python Environment Setup
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -113,13 +114,16 @@ pip install flask requests
 ### System Package Installation
 
 #### ffmpeg
+
 - **Debian or Ubuntu**: `sudo apt-get install -y ffmpeg`
 - **Arch**: `sudo pacman -S ffmpeg`
 
 #### Docker and Compose
+
 Follow installation instructions per your distribution
 
 #### Node, pnpm, Bun
+
 Follow upstream instructions for Tunarr development usage
 
 ## Configuration
@@ -138,17 +142,21 @@ export SONARR_LANGUAGE_PROFILE_ID="1"
 ```
 
 ### Notes
+
 - **MediaRotator root folders are currently hard-coded in handlers:**
+
   - Movies: `/mnt/netstorage/Media/RotatingMovies`
   - TV: `/mnt/netstorage/Media/RotatingTV`
   - If you use different paths, either create symlinks or adjust `radarr_handler.py` and `sonarr_handler.py`.
 
 - **Jellyfin integration requires server URL and token for scripts:**
+
   - Example variables for `scripts/tag_tv_genres.sh`:
     - `JELLYFIN_URL="http://YOUR_JELLYFIN:8096"`
     - `API_KEY="YOUR_TOKEN"`
 
 - **Encodarr listens on port 8099 and writes to:**
+
   - Alerts log: `/home/.../encodarr/alerts_log.log` (adjust as needed)
   - Transcoded output: `/mnt/netstorage/Media/Transcoded`
   - transcode.sh path: `/app/transcode.sh` if containerized; otherwise point to `Encodarr/transcode.sh`
@@ -160,6 +168,7 @@ export SONARR_LANGUAGE_PROFILE_ID="1"
 Do not commit tokens or keys. Prefer environment exports, process managers, or secret stores. For local development, source `example.env` in your shell session.
 
 ### Media Directory Structure
+
 ```
 /mnt/netstorage/Media/
 ├── Movies/                  # Primary movie collection (Trailarr)
@@ -170,6 +179,7 @@ Do not commit tokens or keys. Prefer environment exports, process managers, or s
 ```
 
 ### Service Port Allocation
+
 - **Encodarr**: 8099 (Flask API)
 - **Threadfin**: 34400 (IPTV proxy)
 - **Trailarr**: 7889 (Trailer management)
@@ -178,6 +188,7 @@ Do not commit tokens or keys. Prefer environment exports, process managers, or s
 ## Quick Start
 
 ### 🚀 New! One-Command Setup
+
 The missing MediaRotator CLI and automated setup scripts are now implemented:
 
 ```bash
@@ -196,6 +207,7 @@ docker-compose up -d
 ```
 
 ### 🔧 Recent Improvements
+
 - ✅ **MediaRotator CLI implemented** - Main automation script was missing, now complete
 - ✅ **Security fix** - Removed hard-coded API key from genre tagging script
 - ✅ **Docker typo fixed** - Fixed `unless-stopped` in trailarr configuration
@@ -205,33 +217,37 @@ docker-compose up -d
 
 ### 📋 Service Status Summary
 
-| Component | Status | Type | Notes |
-|-----------|--------|------|---------|
-| **Encodarr** | ✅ Ready | Always-on | Flask webhook service for transcoding |
-| **Threadfin** | ✅ Ready | Always-on | IPTV proxy via Docker Compose |
-| **Trailarr** | ✅ Fixed | Always-on | Trailer service (typo corrected) |
-| **Tunarr** | ✅ Ready | Development | Live TV channels (dev mode ready) |
-| **MediaRotator** | ✅ Complete | Scheduled | Main CLI script implemented |
-| **Health Checker** | ✅ Ready | Scheduled | Media validation script |
-| **Genre Tagging** | ✅ Secured | Interactive | Now uses environment variables |
-| **Transcoding** | ✅ Ready | Manual | Batch processing script |
+| Component          | Status      | Type        | Notes                                 |
+| ------------------ | ----------- | ----------- | ------------------------------------- |
+| **Encodarr**       | ✅ Ready    | Always-on   | Flask webhook service for transcoding |
+| **Threadfin**      | ✅ Ready    | Always-on   | IPTV proxy via Docker Compose         |
+| **Trailarr**       | ✅ Fixed    | Always-on   | Trailer service (typo corrected)      |
+| **Tunarr**         | ✅ Ready    | Development | Live TV channels (dev mode ready)     |
+| **MediaRotator**   | ✅ Complete | Scheduled   | Main CLI script implemented           |
+| **Health Checker** | ✅ Ready    | Scheduled   | Media validation script               |
+| **Genre Tagging**  | ✅ Secured  | Interactive | Now uses environment variables        |
+| **Transcoding**    | ✅ Ready    | Manual      | Batch processing script               |
 
 ## Usage
 
 ### End-to-End Component Setup
 
 #### MediaRotator
+
 - Configure Radarr and Sonarr and ensure RotatingMovies and RotatingTV exist.
 - Schedule MediaRotator periodically (example: hourly) to import one new title if eligible and rotate if over quota.
 
 #### Encodarr
+
 Start the Flask app:
+
 ```bash
 cd Encodarr
 FLASK_APP=app.py flask run --host 0.0.0.0 --port 8099
 ```
 
 Send a test notification:
+
 ```bash
 curl -X POST http://localhost:8099/notify \
   -H "Content-Type: application/json" \
@@ -241,40 +257,49 @@ curl -X POST http://localhost:8099/notify \
 Check alerts_log.log and the Transcoded output folder.
 
 #### Healthcheck
+
 ```bash
 python Encodarr/media_healthcheck.py
 ```
+
 Results written to /mnt/netstorage/Media/bad_files.log
 
 #### Threadfin
+
 ```bash
 cd threadfin
 docker compose up -d
 ```
-UI at http://localhost:34400
+
+UI at <http://localhost:34400>
 
 #### Trailarr
+
 ```bash
 cd trailarr
 docker compose up -d
 ```
-UI at http://localhost:7889
+
+UI at <http://localhost:7889>
 
 #### Tunarr (dev)
+
 ```bash
 cd tunarr
 pnpm turbo dev
 ```
-Backend: http://localhost:8000, Web: http://localhost:5173/web
+
+Backend: <http://localhost:8000>, Web: <http://localhost:5173/web>
 
 ### Basic Operations
+
 ```bash
 # Check service status
 docker ps | grep -E "(encodarr|threadfin|trailarr)"
 
 # View service logs
 docker logs transcode_notifier
-docker logs threadfin  
+docker logs threadfin
 docker logs trailarr
 
 # Test MediaRotator manually
@@ -283,6 +308,7 @@ python3 -c "from cache import initialize_cache_db; initialize_cache_db()"
 ```
 
 ### API Examples
+
 ```bash
 # Encodarr transcoding notification
 curl -X POST http://localhost:8099/notify \
@@ -306,7 +332,9 @@ print(f'In cache: {is_in_cache(\"tt1234567\")}')
 ```
 
 ### Integration Examples
+
 See component-specific READMEs for detailed integration examples:
+
 - [Encodarr Integration](./Encodarr/README.md#integration-examples)
 - [MediaRotator Usage](./MediaRotator/README.md#automation--operations)
 - [Script Automation](./scripts/README.md#usage)
@@ -314,7 +342,9 @@ See component-specific READMEs for detailed integration examples:
 ## Automation / Operations
 
 ### Cron Automation Examples
+
 Example cron entries:
+
 ```bash
 # Run MediaRotator hourly
 15 * * * * cd /path/to/MediaCycler && /path/to/.venv/bin/python MediaRotator/media_rotator.py --type movie >> /var/log/mediacycler.log 2>&1
@@ -323,15 +353,18 @@ Example cron entries:
 # Nightly healthcheck
 0 3 * * * /path/to/.venv/bin/python /path/to/MediaCycler/Encodarr/media_healthcheck.py >> /var/log/media_healthcheck.log 2>&1
 ```
+
 **Note**: Provide or implement `MediaRotator/media_rotator.py` if missing.
 
 ### Automated Tasks
+
 - **MediaRotator**: Continuous disk space monitoring and content rotation
 - **Encodarr**: Real-time transcoding triggered by file system events
 - **Genre Tagging**: Batch processing of TV collections in Jellyfin
 - **Trailer Updates**: Scheduled trailer acquisition and organization
 
 ### Monitoring
+
 ```bash
 # Service health checks
 curl http://localhost:8099/notify -I  # Should return 405 Method Not Allowed
@@ -346,11 +379,12 @@ tail -f /var/log/syslog | grep -E "(docker|media)"
 ```
 
 ### Backup Procedures
+
 ```bash
 # MediaRotator cache backup
 cp ~/.media_rotation_cache.db ~/.media_rotation_cache.db.backup
 
-# Service configuration backup  
+# Service configuration backup
 tar -czf mediaroller-config-$(date +%Y%m%d).tar.gz \
     threadfin/data/conf \
     trailarr/trailarr_data \
@@ -365,22 +399,28 @@ tar -xzf mediaroller-config-YYYYMMDD.tar.gz
 ### Common Issues
 
 #### Radarr or Sonarr 400 responses
+
 - Check API keys and base URLs.
 - Confirm quality and language profile IDs exist.
 
 #### Encodarr timeouts
+
 - app.py subprocess timeout is 600 seconds; increase if needed.
 - Ensure ffmpeg and ffprobe are installed and on PATH.
 
 #### Healthcheck noise
+
 - Some valid files may log decoder warnings; review stderr contents.
 
 #### Permissions
+
 - Docker bind mounts and host folders require correct PUID and PGID.
 
 #### Services won't start
+
 **Symptoms**: Container exit codes, port binding failures
 **Solutions**:
+
 ```bash
 # Check port availability
 sudo netstat -tulpn | grep -E ":8099|:34400|:7889"
@@ -394,8 +434,10 @@ ls -la /mnt/netstorage/Media/
 ```
 
 #### Media path not accessible
+
 **Symptoms**: File not found errors, permission denied
 **Solutions**:
+
 ```bash
 # Verify mount point
 mount | grep netstorage
@@ -406,13 +448,16 @@ sudo chown -R 1000:1000 /mnt/netstorage/Media/
 ```
 
 #### API integration failures
+
 **Symptoms**: HTTP 401/403 errors, connection timeouts
 **Solutions**:
+
 - Verify API keys in environment variables
 - Check service URLs and network connectivity
 - Review Radarr/Sonarr API key permissions
 
 ### Log Analysis
+
 ```bash
 # Encodarr transcode logs
 grep -i "transcode" /var/log/docker/containers/*/container.log
@@ -425,6 +470,7 @@ docker-compose -f Encodarr/docker-compose.yml logs -f
 ```
 
 ### Debug Mode
+
 ```bash
 # Enable Flask debug mode (Encodarr)
 export FLASK_DEBUG=1
@@ -443,16 +489,19 @@ initialize_cache_db()
 ## Security
 
 ### Access Control
+
 - **Encodarr /notify endpoint**: Restrict access. Prefer a reverse proxy with auth or bind to localhost.
 - **API Key Management**: Store API keys as environment variables or in a secret manager.
 - **Script Security**: Review scripts for hard-coded tokens (e.g., tag_tv_genres.sh) and replace with env-based configuration in production.
 
 ### Authentication
+
 - **API Keys**: All external service integrations require valid API keys
 - **Network Access**: Services bind to all interfaces; use firewall rules for restriction
 - **File System**: Media directories require read/write access for service accounts
 
 ### Network Security
+
 ```bash
 # Restrict service access to internal networks
 sudo ufw allow from 192.168.0.0/16 to any port 8099
@@ -461,24 +510,29 @@ sudo ufw allow from 192.168.0.0/16 to any port 7889
 ```
 
 ### Data Protection
+
 - SQLite cache files stored with restricted permissions (600)
 - Configuration files exclude sensitive credentials
 - Docker secrets management for API keys in production
 
 ### Security Best Practices
+
 - Regular container image updates
 - Minimal privilege containers with non-root users
 - Network segmentation between services and external access
 - Audit logging for all API interactions
 
 ## Roadmap
+
 Planned features and improvements:
+
 - [ ] **Q1 2024**: Web-based dashboard for service monitoring
 - [ ] **Q2 2024**: Enhanced MediaRotator with multiple quality profiles
 - [ ] **Q3 2024**: Automated backup and disaster recovery
 - [ ] **Q4 2024**: Kubernetes deployment manifests
 
 ## Contributing
+
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/your-feature`
 3. Follow component-specific development guidelines
@@ -489,9 +543,11 @@ Planned features and improvements:
 See component READMEs for specific contribution guidelines and testing procedures.
 
 ## License
+
 This project is licensed under the MIT License - see [LICENSE](./LICENSE) file for details.
 
 Individual components may have additional license requirements:
+
 - **Tunarr**: zlib license (third-party component)
 - **Threadfin**: Check upstream licensing
 - **Trailarr**: Check upstream licensing
@@ -499,6 +555,7 @@ Individual components may have additional license requirements:
 ---
 
 ## Acceptance Criteria
+
 - [ ] All services start successfully with example configuration
 - [ ] API endpoints respond correctly to health checks
 - [ ] Docker Compose deployments work without manual intervention
