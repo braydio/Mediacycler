@@ -5,7 +5,7 @@
 MediaRotator is an intelligent disk space management system that maintains 4TB quotas for rotating media collections while preventing duplicate imports through SQLite caching.
 
 - **Purpose**: Automated media rotation with disk quota enforcement
-- **Integration**: Connects MDBList curated content with Radarr/Sonarr APIs
+- **Integration**: Connects MDBList curated content (with Trakt fallback) with Radarr/Sonarr APIs
 - **Status**: Production-ready modular Python components
 
 ## Features
@@ -15,7 +15,7 @@ Intelligent content lifecycle management:
 - **Quota Management**: Enforces 4TB limits on rotating media folders
 - **Import Caching**: SQLite database prevents duplicate content acquisition
 - **API Integration**: Seamless Radarr/Sonarr media addition and search triggering
-- **Content Discovery**: MDBList `hd-movie-lists` integration for quality content
+- **Content Discovery**: MDBList `hd-movie-lists` integration for quality content with fallback to Trakt trending lists
 - **Modular Design**: Separate components for cache, API handlers, and content fetching
 - **Automated Cleanup**: Removes oldest entries when quota exceeded
 - **Notifications**: Desktop alerts and timestamp logging on media changes
@@ -29,13 +29,14 @@ Modular Python architecture with SQLite persistence:
 - **cache.py**: SQLite database operations for import tracking
 - **radarr_handler.py**: Radarr API integration for movie management
 - **sonarr_handler.py**: Sonarr API integration for TV show management
-- **mdblist_fetcher.py**: MDBList API client for content discovery
+- **mdblist_fetcher.py**: MDBList API client with Trakt fallback
+- **trakt_fetcher.py**: Trakt API client for trending lists
 
 ### Data Flow
 
 1. **Disk monitoring**: Check storage usage for rotating media folders
 2. **Quota enforcement**: Remove oldest cached entries when over 4TB limit
-3. **Content discovery**: Fetch curated lists from MDBList API
+3. **Content discovery**: Fetch curated lists from MDBList API (fallback to Trakt trending lists when necessary)
 4. **Cache validation**: Check SQLite database to prevent duplicate imports
 5. **Media addition**: Add new content via Radarr/Sonarr APIs
 6. **Search triggering**: Initiate download process for added content
@@ -46,6 +47,7 @@ Modular Python architecture with SQLite persistence:
 - **Radarr API**: Movie collection management and search triggering
 - **Sonarr API**: TV show collection management and search triggering
 - **MDBList API**: Curated HD movie and TV show list source
+- **Trakt API**: Trending list fallback when MDBList is unavailable
 - **SQLite**: Local caching and import history persistence
 
 ## Prerequisites
@@ -57,7 +59,7 @@ System requirements for media rotation management:
 - **Operating System**: Linux with Python 3.6+
 - **Memory**: 512MB RAM minimum for SQLite operations
 - **Storage**: Access to media paths (`/mnt/netstorage/Media/Rotating*`)
-- **Network**: API access to Radarr, Sonarr, and MDBList services
+- **Network**: API access to Radarr, Sonarr, MDBList, and Trakt services
 
 ### Dependencies
 
@@ -76,6 +78,7 @@ Required for full functionality:
 - **RADARR_API_KEY**: Radarr instance API access
 - **SONARR_API_KEY**: Sonarr instance API access
 - **MDBLIST_API_KEY**: MDBList API for content discovery
+- **TRAKT_CLIENT_ID**: Trakt API key for trending list fallback
 
 ## Installation
 
@@ -235,7 +238,7 @@ from mdblist_fetcher import *
 
 1. **Check disk size of media folder**
 2. **If over 4TB**: Delete oldest imported entry (and remove from Radarr/Sonarr too)
-3. **Fetch lists**: Get curated content from `HD Movie Lists` on MDBList
+3. **Fetch lists**: Get curated content from `HD Movie Lists` on MDBList (fallback to Trakt trending lists if MDBList fails)
 4. **Load cache**: Read previously imported IDs from SQLite
 5. **Process lists**: For each list, find content not in Radarr/Sonarr AND not in cache
 6. **Add content**: Add via API, trigger search, and record in cache
@@ -397,7 +400,7 @@ This project is licensed under the MIT License - see [LICENSE](../LICENSE) file 
 - [ ] SQLite cache prevents duplicate imports
 - [ ] Disk quota monitoring accurately enforces 4TB limits
 - [ ] Content rotation removes oldest entries when quota exceeded
-- [ ] MDBList integration provides quality content recommendations
+- [ ] MDBList integration provides quality content recommendations (Trakt fallback available)
 - [ ] Cache persists between runs and system restarts
 - [ ] Environment variables provide clean configuration
 - [ ] Error handling captures and logs issues appropriately
