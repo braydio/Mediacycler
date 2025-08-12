@@ -1,5 +1,9 @@
+"""Helpers for interacting with the Radarr API."""
+
 import os
 import requests
+
+from notifications import notify_change
 
 RADARR_API_KEY = os.getenv("RADARR_API_KEY")
 RADARR_URL = os.getenv("RADARR_URL", "http://localhost:7878")
@@ -34,6 +38,7 @@ def add_movie_to_radarr(movie_data):
     res = requests.post(f"{RADARR_URL}/api/v3/movie", headers=HEADERS, json=payload)
     if res.status_code == 201:
         print(f"✅ Added movie: {movie_data['title']} ({movie_data['year']})")
+        notify_change(f"Added movie: {movie_data['title']}")
         return True
     elif res.status_code == 400 and "already exists" in res.text.lower():
         print(f"⚠️ Movie already exists in Radarr: {movie_data['title']}")
@@ -59,6 +64,7 @@ def delete_movie_by_imdb(imdb_id, delete_files=True):
             )
             if del_res.status_code == 200:
                 print(f"🗑️ Deleted movie: {movie['title']}")
+                notify_change(f"Deleted movie: {movie['title']}")
                 return True
     print(f"⚠️ No matching movie found to delete with IMDb ID {imdb_id}")
     return False
