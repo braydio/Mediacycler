@@ -41,6 +41,8 @@ def check_required_env_vars():
         print("export RADARR_QUALITY_PROFILE_ID='1'      # Default shown")
         print("export SONARR_QUALITY_PROFILE_ID='1'      # Default shown")
         print("export SONARR_LANGUAGE_PROFILE_ID='1'     # Default shown")
+        print("export ENABLE_NOTIFICATIONS='true'      # Desktop notifications (default: true)")
+        print("export MEDIA_CHANGE_FILE='last_media_change.txt'  # Path to change timestamp")
         return False
     return True
 

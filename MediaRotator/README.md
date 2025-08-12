@@ -18,6 +18,7 @@ Intelligent content lifecycle management:
 - **Content Discovery**: MDBList `hd-movie-lists` integration for quality content
 - **Modular Design**: Separate components for cache, API handlers, and content fetching
 - **Automated Cleanup**: Removes oldest entries when quota exceeded
+- **Notifications**: Desktop alerts and timestamp logging on media changes
 
 ## Architecture / How it works
 
@@ -137,6 +138,10 @@ export MDBLIST_USER="hd-movie-lists"
 export ROTATING_MOVIES_PATH="/mnt/netstorage/Media/RotatingMovies"
 export ROTATING_TV_PATH="/mnt/netstorage/Media/RotatingTV"
 export CACHE_DB_PATH="$HOME/.media_rotation_cache.db"
+
+# Notifications
+export ENABLE_NOTIFICATIONS="true"
+export MEDIA_CHANGE_FILE="$PWD/last_media_change.txt"
 ```
 
 ### SQLite Cache Schema

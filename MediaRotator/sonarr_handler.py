@@ -1,5 +1,9 @@
+"""Helpers for interacting with the Sonarr API."""
+
 import os
 import requests
+
+from notifications import notify_change
 
 SONARR_API_KEY = os.getenv("SONARR_API_KEY")
 SONARR_URL = os.getenv("SONARR_URL", "http://localhost:8989")
@@ -38,6 +42,7 @@ def add_show_to_sonarr(show_data):
     res = requests.post(f"{SONARR_URL}/api/v3/series", headers=HEADERS, json=payload)
     if res.status_code == 201:
         print(f"Added show: {show_data['title']}")
+        notify_change(f"Added show: {show_data['title']}")
         return True
     elif res.status_code == 400 and "already exists" in res.text.lower():
         print(f"Show already exists in Sonarr: {show_data['title']}")
@@ -63,6 +68,7 @@ def delete_show_by_tvdb(tvdb_id, delete_files=True):
             )
             if del_res.status_code == 200:
                 print(f"🗑️ Deleted show: {show['title']}")
+                notify_change(f"Deleted show: {show['title']}")
                 return True
     print(f"No matching show found to delete with TVDB ID {tvdb_id}")
     return False
