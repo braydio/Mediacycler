@@ -36,7 +36,7 @@ services:
       - mediacycler
 
   encodarr:
-    build: 
+    build:
       context: ./Encodarr
       dockerfile: Dockerfile
     container_name: mediacycler-encodarr
@@ -47,6 +47,27 @@ services:
     volumes:
       - /mnt/netstorage/Media:/media:rw
       - ./Encodarr/logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - mediacycler
+
+  mediarotator:
+    build:
+      context: ./MediaRotator
+      dockerfile: Dockerfile
+    container_name: mediacycler-rotator
+    environment:
+      - TZ=America/New_York
+      - RADARR_API_KEY=${RADARR_API_KEY}
+      - SONARR_API_KEY=${SONARR_API_KEY}
+      - RADARR_URL=${RADARR_URL}
+      - SONARR_URL=${SONARR_URL}
+      - RADARR_QUALITY_PROFILE_ID=${RADARR_QUALITY_PROFILE_ID}
+      - SONARR_QUALITY_PROFILE_ID=${SONARR_QUALITY_PROFILE_ID}
+      - SONARR_LANGUAGE_PROFILE_ID=${SONARR_LANGUAGE_PROFILE_ID}
+    volumes:
+      - mediarotator_cache:/root
+      - ./last_media_change.txt:/app/last_media_change.txt
     restart: unless-stopped
     networks:
       - mediacycler
@@ -78,4 +99,6 @@ volumes:
   trailarr_data:
     driver: local
   encodarr_logs:
+    driver: local
+  mediarotator_cache:
     driver: local

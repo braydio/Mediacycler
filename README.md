@@ -211,7 +211,7 @@ docker-compose up -d
 - ✅ **MediaRotator CLI implemented** - Main automation script was missing, now complete
 - ✅ **Security fix** - Removed hard-coded API key from genre tagging script
 - ✅ **Docker typo fixed** - Fixed `unless-stopped` in trailarr configuration
-- ✅ **Root orchestration** - Added main docker-compose.yml for all services
+- ✅ **Root orchestration** - Main docker-compose now runs MediaRotator alongside Threadfin, Trailarr, and Encodarr
 - ✅ **Automated cron setup** - Script to install scheduled tasks automatically
 - ✅ **Environment template** - Complete .env.example with all required variables
 
