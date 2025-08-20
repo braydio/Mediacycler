@@ -76,8 +76,12 @@ Thumbs.db
 # Data directories that might contain sensitive information
 data/
 backups/
-*.db
 
 # Runtime files
 *.pid
 *.sock
+
+# SQL
+*.db
+*.db-wal
+*.db-shm
