@@ -17,6 +17,15 @@ from pathlib import Path
 # Add the MediaRotator directory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+try:
+    from dotenv import load_dotenv
+except Exception:
+    load_dotenv = None
+
+# Load environment variables from a local .env if available
+if load_dotenv:
+    load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+
 from cache import initialize_cache_db, add_to_cache, is_in_cache, remove_from_cache, get_oldest_entry
 from mdblist_fetcher import get_all_items_from_all_lists
 from radarr_handler import lookup_movie, add_movie_to_radarr, delete_movie_by_imdb

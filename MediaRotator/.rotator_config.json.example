@@ -1,0 +1,6 @@
+{
+  "use_mdblist": false,
+  "movie_lists": ["trending"],
+  "show_lists": ["trending"]
+}
+
