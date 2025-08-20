@@ -76,6 +76,7 @@ Thumbs.db
 # Data directories that might contain sensitive information
 data/
 backups/
+*.db
 
 # Runtime files
 *.pid
