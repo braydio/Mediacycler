@@ -7,7 +7,8 @@ from notifications import notify_change
 
 SONARR_API_KEY = os.getenv("SONARR_API_KEY")
 SONARR_URL = os.getenv("SONARR_URL", "http://localhost:8989")
-SHOW_ROOT_FOLDER = "/mnt/netstorage/Media/RotatingTV"
+# Root folder used when adding new shows. Configure via env or rotator config.
+SHOW_ROOT_FOLDER = os.getenv("SHOW_ROOT_FOLDER", "/mnt/netstorage/Media/RotatingTV")
 QUALITY_PROFILE_ID = int(os.getenv("SONARR_QUALITY_PROFILE_ID", "1"))  # default profile
 LANGUAGE_PROFILE_ID = int(os.getenv("SONARR_LANGUAGE_PROFILE_ID", "1"))  # default
 
@@ -26,6 +27,19 @@ def lookup_show(tvdb_id):
 
 def add_show_to_sonarr(show_data):
     """Add a show to Sonarr and trigger a search."""
+    # Verify the configured root folder exists in Sonarr
+    try:
+        res = requests.get(f"{SONARR_URL}/api/v3/rootfolder", headers=HEADERS)
+        res.raise_for_status()
+        root_paths = [r.get("path") for r in res.json()]
+    except Exception:
+        root_paths = []
+
+    if SHOW_ROOT_FOLDER not in root_paths:
+        print(f"❌ Configured root folder '{SHOW_ROOT_FOLDER}' is not known to Sonarr")
+        print("Ensure the folder exists on the Sonarr host and is added as a root folder in Sonarr settings.")
+        return False
+
     payload = {
         "title": show_data["title"],
         "qualityProfileId": QUALITY_PROFILE_ID,

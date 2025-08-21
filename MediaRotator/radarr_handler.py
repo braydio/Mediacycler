@@ -7,7 +7,8 @@ from notifications import notify_change
 
 RADARR_API_KEY = os.getenv("RADARR_API_KEY")
 RADARR_URL = os.getenv("RADARR_URL", "http://localhost:7878")
-MOVIE_ROOT_FOLDER = "/mnt/netstorage/Media/RotatingMovies"
+# Root folder used when adding new movies. Configure via env or rotator config.
+MOVIE_ROOT_FOLDER = os.getenv("MOVIE_ROOT_FOLDER", "/mnt/netstorage/Media/RotatingMovies")
 QUALITY_PROFILE_ID = int(os.getenv("RADARR_QUALITY_PROFILE_ID", "1"))  # default profile
 
 HEADERS = {"X-Api-Key": RADARR_API_KEY}
@@ -24,6 +25,18 @@ def lookup_movie(imdb_id):
 
 def add_movie_to_radarr(movie_data):
     """Add a movie to Radarr and trigger a search."""
+    # Verify the configured root folder exists in Radarr
+    try:
+        res = requests.get(f"{RADARR_URL}/api/v3/rootfolder", headers=HEADERS)
+        res.raise_for_status()
+        root_paths = [r.get("path") for r in res.json()]
+    except Exception:
+        root_paths = []
+
+    if MOVIE_ROOT_FOLDER not in root_paths:
+        print(f"❌ Configured root folder '{MOVIE_ROOT_FOLDER}' is not known to Radarr")
+        print("Ensure the folder exists on the Radarr host and is added as a root folder in Radarr settings.")
+        return False
     payload = {
         "title": movie_data["title"],
         "qualityProfileId": QUALITY_PROFILE_ID,

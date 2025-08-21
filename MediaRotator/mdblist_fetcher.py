@@ -39,9 +39,11 @@ def get_all_items_from_all_lists():
     if config.get("use_mdblist"):
         # Original MDBList behavior
         try:
-            lists = requests.get(f"{MDBLIST_BASE_URL}/user/{USER}").json()["lists"]
-        except Exception as e:
-            print(f"⚠️ MDBList unavailable: {e}")
+            res = requests.get(f"{MDBLIST_BASE_URL}/user/{USER}", timeout=10)
+            res.raise_for_status()
+            lists = res.json()["lists"]
+        except requests.RequestException as e:
+            print(f"⚠️ MDBList unavailable or slow: {e}")
             print("➡️ Falling back to Trakt trending items")
             yield from get_trending_items()
             return
@@ -50,7 +52,7 @@ def get_all_items_from_all_lists():
             slug = lst["slug"]
             title = lst["title"]
             try:
-                res = requests.get(f"{MDBLIST_BASE_URL}/?list={USER}/{slug}")
+                res = requests.get(f"{MDBLIST_BASE_URL}/?list={USER}/{slug}", timeout=10)
                 res.raise_for_status()
                 items = res.json()["items"]
                 for item in items:
@@ -61,7 +63,7 @@ def get_all_items_from_all_lists():
                         "slug": slug,
                         "list_title": title,
                     }
-            except Exception as e:
+            except requests.RequestException as e:
                 print(f"⚠️ Failed to fetch list '{title}': {e}")
         return
 

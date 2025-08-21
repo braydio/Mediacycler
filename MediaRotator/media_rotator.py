@@ -13,6 +13,8 @@ import argparse
 import os
 import sys
 from pathlib import Path
+import json
+
 
 # Add the MediaRotator directory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent))
@@ -36,6 +38,32 @@ from cache import (
 from mdblist_fetcher import get_all_items_from_all_lists
 from radarr_handler import lookup_movie, add_movie_to_radarr, delete_movie_by_imdb
 from sonarr_handler import lookup_show, add_show_to_sonarr, delete_show_by_tvdb
+
+
+def _load_rotator_config() -> dict:
+    cfg_path = Path(__file__).parent / ".rotator_config.json"
+    if not cfg_path.exists():
+        return {}
+    try:
+        return json.loads(cfg_path.read_text())
+    except Exception:
+        return {}
+
+
+def _get_dir_size_bytes(path: str) -> int:
+    """Return total size in bytes for files under `path`. If path missing, return 0."""
+    try:
+        total = 0
+        for dirpath, dirnames, filenames in os.walk(path):
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                try:
+                    total += os.path.getsize(fp)
+                except OSError:
+                    pass
+        return total
+    except Exception:
+        return 0
 
 
 def check_required_env_vars():
@@ -88,13 +116,18 @@ def add_new_media(dry_run=False, limit=None):
             continue
 
         # Check if already processed
-        if is_in_cache(item_id):
+        print(f"Requested {media_type.title()} '{title}' from SQL MEDIA CACHE (id: {item_id})")
+        cached = is_in_cache(item_id)
+        if cached:
+            # cache check prints a diagnostic; skip processing
             continue
 
         print(f"\n🎬 Processing {media_type}: {title} (from {list_name})")
 
         if dry_run:
-            print(f"[DRY RUN] Would add {media_type}: {title}")
+            print(
+                f"[DRY RUN] Would add {media_type} '{title}' (id: {item_id}) to external service and SQL MEDIA CACHE"
+            )
             continue
 
         success = False
@@ -125,64 +158,138 @@ def add_new_media(dry_run=False, limit=None):
     print(f"  Movies added: {added_movies}")
     print(f"  Shows added: {added_shows}")
     print(f"  Total added: {added_movies + added_shows}")
+    if processed == 0:
+        print("⚠️ No items were fetched. Check network connectivity, MDBList availability, or your .rotator_config.json settings.")
 
 
-def rotate_media(dry_run=False, movie_limit=50, show_limit=25):
+def rotate_media(
+    dry_run=False,
+    movie_limit=50,
+    show_limit=25,
+    movie_disk_limit_gb: float | None = None,
+    show_disk_limit_gb: float | None = None,
+    movie_root_path: str | None = None,
+    show_root_path: str | None = None,
+):
     """Remove oldest media to maintain storage limits."""
     print("🔄 Rotating old media...")
 
     removed_movies = 0
     removed_shows = 0
 
-    # Remove old movies
-    print(f"\n🎬 Checking movie rotation (limit: {movie_limit})...")
-    while True:
-        oldest = get_oldest_entry("movie")
-        if not oldest:
-            print("No movies in cache to rotate")
-            break
+    # Remove old movies by count or disk usage
+    print(f"\n🎬 Checking movie rotation (count limit: {movie_limit})...")
 
-        if removed_movies >= movie_limit:
-            print(f"✋ Reached movie rotation limit ({movie_limit})")
-            break
+    # If disk limit provided, use it instead of count limit
+    movie_limit_reached = False
+    if movie_disk_limit_gb and movie_root_path:
+        limit_bytes = int(movie_disk_limit_gb * 1024**3)
+        current_size = _get_dir_size_bytes(movie_root_path)
+        print(
+            f"📦 Current movie storage: {current_size / (1024**3):.2f} GB (limit: {movie_disk_limit_gb} GB)"
+        )
+        # Remove until under limit
+        while current_size > limit_bytes:
+            oldest = get_oldest_entry("movie")
+            if not oldest:
+                print("No movies in cache to rotate")
+                break
 
-        movie_id, title = oldest
-        print(f"🗑️ Rotating oldest movie: {title}")
+            movie_id, title = oldest
+            print(f"🗑️ Rotating oldest movie: {title}")
+            if dry_run:
+                print(f"[DRY RUN] Would remove movie: {title}")
+                remove_from_cache(movie_id)
+                removed_movies += 1
+            else:
+                if delete_movie_by_imdb(movie_id):
+                    remove_from_cache(movie_id)
+                    removed_movies += 1
+                else:
+                    # If deletion failed, remove from cache anyway to prevent stuck state
+                    remove_from_cache(movie_id)
+                    break
 
-        if dry_run:
-            print(f"[DRY RUN] Would remove movie: {title}")
-            remove_from_cache(movie_id)
-            removed_movies += 1
-            continue
+            current_size = _get_dir_size_bytes(movie_root_path)
+        movie_limit_reached = True
 
-        if delete_movie_by_imdb(movie_id):
-            remove_from_cache(movie_id)
-            removed_movies += 1
-        else:
-            # If deletion failed, remove from cache anyway to prevent stuck state
-            remove_from_cache(movie_id)
-            break
+    if not movie_limit_reached:
+        while True:
+            oldest = get_oldest_entry("movie")
+            if not oldest:
+                print("No movies in cache to rotate")
+                break
 
-    # Remove old shows
-    print(f"\n📺 Checking show rotation (limit: {show_limit})...")
-    while True:
-        oldest = get_oldest_entry("show")
-        if not oldest:
-            print("No shows in cache to rotate")
-            break
+            if removed_movies >= movie_limit:
+                print(f"✋ Reached movie rotation limit ({movie_limit})")
+                break
 
-        if removed_shows >= show_limit:
-            print(f"✋ Reached show rotation limit ({show_limit})")
-            break
+            movie_id, title = oldest
+            print(f"🗑️ Rotating oldest movie: {title}")
 
-        show_id, title = oldest
-        print(f"🗑️ Rotating oldest show: {title}")
+            if dry_run:
+                print(f"[DRY RUN] Would remove movie: {title}")
+                remove_from_cache(movie_id)
+                removed_movies += 1
+
+            if delete_movie_by_imdb(movie_id):
+                remove_from_cache(movie_id)
+                removed_movies += 1
+            else:
+                # If deletion failed, remove from cache anyway to prevent stuck state
+                remove_from_cache(movie_id)
+
+    # Remove old shows by count or disk usage
+    print(f"\n📺 Checking show rotation (count limit: {show_limit})...")
+    show_limit_reached = False
+    if show_disk_limit_gb and show_root_path:
+        limit_bytes = int(show_disk_limit_gb * 1024**3)
+        current_size = _get_dir_size_bytes(show_root_path)
+        print(
+            f"📦 Current show storage: {current_size / (1024**3):.2f} GB (limit: {show_disk_limit_gb} GB)"
+        )
+        while current_size > limit_bytes:
+            oldest = get_oldest_entry("show")
+            if not oldest:
+                print("No shows in cache to rotate")
+                break
+
+            show_id, title = oldest
+            print(f"🗑️ Rotating oldest show: {title}")
+            if dry_run:
+                print(f"[DRY RUN] Would remove show: {title}")
+                remove_from_cache(show_id)
+                removed_shows += 1
+            else:
+                if delete_show_by_tvdb(show_id):
+                    remove_from_cache(show_id)
+                    removed_shows += 1
+                else:
+                    remove_from_cache(show_id)
+                    break
+
+            current_size = _get_dir_size_bytes(show_root_path)
+        show_limit_reached = True
+
+    if not show_limit_reached:
+        print(f"\n📺 Checking show rotation (limit: {show_limit})...")
+        while True:
+            oldest = get_oldest_entry("show")
+            if not oldest:
+                print("No shows in cache to rotate")
+                break
+
+            if removed_shows >= show_limit:
+                print(f"✋ Reached show rotation limit ({show_limit})")
+                break
+
+            show_id, title = oldest
+            print(f"🗑️ Rotating oldest show: {title}")
 
         if dry_run:
             print(f"[DRY RUN] Would remove show: {title}")
             remove_from_cache(show_id)
             removed_shows += 1
-            continue
 
         if delete_show_by_tvdb(show_id):
             remove_from_cache(show_id)
@@ -190,7 +297,6 @@ def rotate_media(dry_run=False, movie_limit=50, show_limit=25):
         else:
             # If deletion failed, remove from cache anyway to prevent stuck state
             remove_from_cache(show_id)
-            break
 
     print(f"\n🔄 Rotation Summary:")
     print(f"  Movies rotated: {removed_movies}")
@@ -247,6 +353,12 @@ def main():
     # Initialize cache database
     initialize_cache_db()
     print("💾 Cache database initialized")
+    # Load rotator config (disk limits, roots)
+    rotator_cfg = _load_rotator_config()
+    movie_root = rotator_cfg.get("movie_root") or os.getenv("MOVIE_ROOT_FOLDER")
+    show_root = rotator_cfg.get("show_root") or os.getenv("SHOW_ROOT_FOLDER")
+    movie_disk_limit = rotator_cfg.get("movie_disk_limit_gb")
+    show_disk_limit = rotator_cfg.get("show_disk_limit_gb")
 
     try:
         if not args.rotate_only:
@@ -257,6 +369,10 @@ def main():
                 dry_run=args.dry_run,
                 movie_limit=args.movie_rotation_limit,
                 show_limit=args.show_rotation_limit,
+                movie_disk_limit_gb=movie_disk_limit,
+                show_disk_limit_gb=show_disk_limit,
+                movie_root_path=movie_root,
+                show_root_path=show_root,
             )
 
     except KeyboardInterrupt:

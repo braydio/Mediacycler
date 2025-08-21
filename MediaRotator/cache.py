@@ -37,6 +37,10 @@ def add_to_cache(item_id, media_type, title, list_name):
     )
     conn.commit()
     conn.close()
+    try:
+        print(f"✅ SQL MEDIA CACHE: added {media_type} '{title}' (id: {item_id}) from list '{list_name}'")
+    except Exception:
+        pass
 
 
 def is_in_cache(item_id):
@@ -46,7 +50,12 @@ def is_in_cache(item_id):
     cursor.execute("SELECT 1 FROM imported_media WHERE id = ?", (item_id,))
     result = cursor.fetchone()
     conn.close()
-    return result is not None
+    found = result is not None
+    try:
+        print(f"🔎 SQL MEDIA CACHE: lookup id={item_id} -> {'found' if found else 'not found'}")
+    except Exception:
+        pass
+    return found
 
 
 def remove_from_cache(item_id):
@@ -56,6 +65,10 @@ def remove_from_cache(item_id):
     cursor.execute("DELETE FROM imported_media WHERE id = ?", (item_id,))
     conn.commit()
     conn.close()
+    try:
+        print(f"🗑️ SQL MEDIA CACHE: removed id={item_id}")
+    except Exception:
+        pass
 
 
 def get_oldest_entry(media_type):

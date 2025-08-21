@@ -41,6 +41,13 @@ Configuring Trakt lists
 - Example: copy `.rotator_config.json.example` to `MediaRotator/.rotator_config.json` and edit `movie_lists` and `show_lists`.
 - To force using MDBList instead, set `"use_mdblist": true` in the config.
 
+Disk usage limits
+- Configure rotating library paths and limits in `.rotator_config.json`:
+  - `movie_root`: path used when adding movies to Radarr (must match a Radarr root folder).
+  - `movie_disk_limit_gb`: maximum GB allowed for rotating movies (rotator will delete oldest until under limit).
+  - Same keys exist for shows: `show_root` and `show_disk_limit_gb`.
+ - Copy `.rotator_config.json.example` and edit; mount these files into containers so the rotator and Radarr see the same paths.
+
 Use a `.env` file for local config
 - Place a `.env` in the service folder (example `MediaRotator/.env`) with keys like `RADARR_API_KEY=...` and `SONARR_API_KEY=...`.
 - The project uses `python-dotenv` (listed in `requirements.txt`); install with `pip install -r requirements.txt` to load `.env` automatically.

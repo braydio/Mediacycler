@@ -23,9 +23,15 @@ HEADERS = {
 
 def _get(endpoint: str, params: Dict[str, int] | None = None) -> list[dict]:
     """Internal helper to perform a GET request to the Trakt API."""
-    res = requests.get(f"{TRAKT_BASE_URL}{endpoint}", headers=HEADERS, params=params)
-    res.raise_for_status()
-    return res.json()
+    try:
+        res = requests.get(
+            f"{TRAKT_BASE_URL}{endpoint}", headers=HEADERS, params=params, timeout=10
+        )
+        res.raise_for_status()
+        return res.json()
+    except requests.RequestException as e:
+        print(f"⚠️ Trakt request failed: {e}")
+        return []
 
 
 def get_trending_items(limit: int = 50) -> Generator[dict, None, None]:
