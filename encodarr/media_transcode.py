@@ -6,7 +6,7 @@ from datetime import datetime
 
 MEDIA_DIR = "/mnt/netstorage/Media"
 SUBDIRS = ["TV", "Movies", "Music"]
-PI_SUPPORTED_CODECS = {"h264", "mpeg4", "mpeg2video", "vp8"}  # add "hevc" for Pi 5+
+SUPPORTED_CODECS = {"h264", "mpeg4", "mpeg2video", "vp8"}  # add "hevc" for Pi 5+
 VIDEO_EXTS = {".mp4", ".mkv", ".avi", ".mov", ".flv", ".wmv", ".webm"}
 LOGFILE = os.path.join(MEDIA_DIR, "transcoded_files.log")
 
@@ -102,7 +102,7 @@ def main():
                     if ext in VIDEO_EXTS:
                         filepath = os.path.join(root, name)
                         vcodec, acodec = get_codec_info(filepath)
-                        if vcodec and vcodec not in PI_SUPPORTED_CODECS:
+                        if vcodec and vcodec not in SUPPORTED_CODECS:
                             print(
                                 f"File {filepath} uses {vcodec}, not Pi-supported. Will transcode."
                             )
