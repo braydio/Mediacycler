@@ -388,6 +388,17 @@ pip install requests pytest
 pytest tests/
 ```
 
+## Testing & Coverage
+
+To verify code quality and generate coverage metrics:
+
+```bash
+docker-compose run --rm mediarotator pytest --cov -q
+```
+
+The command prints a coverage summary and creates a `.coverage` data file.
+When run with `--cov-report=html`, it also builds an `htmlcov/` directory containing an HTML report.
+
 ## License
 
 This project is licensed under the MIT License - see [LICENSE](../LICENSE) file for details.
