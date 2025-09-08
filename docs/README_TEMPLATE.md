@@ -86,6 +86,16 @@ cp config.example.yml config.yml
 ./start-service.sh
 ```
 
+## Testing & Coverage
+
+```bash
+# Run Python tests with coverage
+pytest --cov --maxfail=1 -q
+
+# Run Node tests with coverage
+npm test -- --coverage
+```
+
 ## Configuration
 
 ### Environment Variables

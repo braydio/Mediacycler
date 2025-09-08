@@ -486,6 +486,18 @@ initialize_cache_db()
 "
 ```
 
+## Testing & Coverage
+
+Run tests for each service with coverage reporting enabled to validate functionality.
+
+```bash
+# Python services
+pytest --cov --maxfail=1 -q
+
+# Tunarr (Node)
+npm test -- --coverage
+```
+
 ## Security
 
 ### Access Control
