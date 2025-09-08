@@ -369,6 +369,16 @@ Planned features and improvements:
 - [ ] **Q3 2024**: Web UI for monitoring and configuration
 - [ ] **Q4 2024**: Advanced queuing and priority management
 
+## Testing & Coverage
+Run tests inside the encodarr service container:
+
+```bash
+docker-compose run --rm encodarr pytest --cov -q
+```
+
+The command prints a coverage summary and writes detailed data to a `.coverage` file. To generate an HTML report, append
+`--cov-report=html` and open `htmlcov/index.html` in your browser.
+
 ## Contributing
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/encodarr-enhancement`
