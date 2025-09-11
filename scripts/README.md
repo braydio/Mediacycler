@@ -8,6 +8,8 @@ Collection of utility scripts for automated media management, focusing on Jellyf
 - **Status**: Production-ready shell scripts with robust error handling
 
 ## Features
+- **Subtitle Conversion**: Recursively convert ASS subtitles to SRT format using ffmpeg
+
 Jellyfin automation capabilities:
 - **Genre Tagging**: Automatic genre assignment based on folder structure
 - **Collection Management**: Create and maintain genre-based collections
@@ -20,6 +22,7 @@ Jellyfin automation capabilities:
 Shell-based automation with API integration:
 
 ### Core Components
+- **convert_ass_to_srt.sh**: Recursively convert ASS subtitle files to SRT format
 - **tag_tv_genres.sh**: Jellyfin TV genre tagging and collection automation
 
 ### Data Flow
