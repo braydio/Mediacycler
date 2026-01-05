@@ -143,7 +143,7 @@ export SONARR_LANGUAGE_PROFILE_ID="1"
 
 ### Notes
 
-- **MediaRotator root folders are currently hard-coded in handlers:**
+- **MediaRotator root folders are set to env variables SHOW_ROOT_FOLDER and MOVIE_ROOT_FOLDER in handlers, with defaults per:**
 
   - Movies: `/mnt/netstorage/Media/RotatingMovies`
   - TV: `/mnt/netstorage/Media/RotatingTV`
