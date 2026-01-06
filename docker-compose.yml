@@ -37,7 +37,7 @@ services:
 
   encodarr:
     build:
-      context: ./Encodarr
+      context: ./encodarr
       dockerfile: Dockerfile
     container_name: mediacycler-encodarr
     environment:
@@ -53,7 +53,7 @@ services:
 
   mediarotator:
     build:
-      context: ./MediaRotator
+      context: ./mediarotator
       dockerfile: Dockerfile
     container_name: mediacycler-rotator
     environment:
