@@ -1,0 +1,15 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["@tunarr/types#build"],
+      "outputs": ["dist/**"]
+    },
+    "build-dev": {
+      "dependsOn": ["@tunarr/types#build"],
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

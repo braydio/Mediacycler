@@ -1,0 +1,15 @@
+node_modules
+# Keep environment variables out of version control
+.env
+out/
+temp/
+streams/
+*.log
+**/web/
+*.zip
+bin/
+
+src/generated/**
+!src/generated/web-imports.d.ts
+!src/generated/.gitkeep
+emby.ts

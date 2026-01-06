@@ -1,0 +1,56 @@
+name: Semantic Release (test)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read # for checkout
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for npm provenance
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Latest Corepack
+        run: |
+          npm install -g corepack@latest
+          corepack enable && corepack enable pnpm
+          pnpm --version
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
+      #   run: npm audit signatures
+
+      - name: Release
+        id: semantic
+        uses: chrisbenincasa/semantic-release-action@e0b75dd3b943e75f6bea693cc69caf82c26c0571
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+
+      - name: Do something when a new release published
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: |
+          echo ${{ steps.semantic.outputs.new_release_version }}
+          echo ${{ steps.semantic.outputs.new_release_major_version }}
+          echo ${{ steps.semantic.outputs.new_release_minor_version }}
+          echo ${{ steps.semantic.outputs.new_release_patch_version }}
+          echo ${{ steps.semantic.outputs.new_release_prerelease_version }}
+          echo ${{ steps.semantic.outputs.new_release_git_tag }}

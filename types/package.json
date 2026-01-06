@@ -1,0 +1,60 @@
+{
+  "name": "@tunarr/types",
+  "version": "1.0.14",
+  "description": "Type definitions and schemas shared between server and web",
+  "private": true,
+  "scripts": {
+    "build": "tsc --declaration ",
+    "clean": "rimraf ./build/",
+    "dev": "tsc --declaration --watch",
+    "build-dev": "tsc --declaration --watch",
+    "gen-emby": "typed-openapi https://swagger.emby.media/openapi.json -r zod -o ./build/emby-generated.ts"
+  },
+  "main": "./dist/src/index.js",
+  "module": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "keywords": [],
+  "author": "chrisbenincasa",
+  "type": "module",
+  "license": "Zlib",
+  "devDependencies": {
+    "@microsoft/api-extractor": "^7.43.0",
+    "@typescript-eslint/eslint-plugin": "6.0.0",
+    "@typescript-eslint/parser": "6.0.0",
+    "eslint": "catalog:",
+    "rimraf": "^5.0.5",
+    "tsup": "^8.0.2",
+    "typed-openapi": "^0.10.1",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./package.json": "./package.json",
+    "./schemas": {
+      "types": "./dist/src/schemas/index.d.ts",
+      "default": "./dist/src/schemas/index.js"
+    },
+    "./plex": {
+      "types": "./dist/src/plex/index.d.ts",
+      "default": "./dist/src/plex/index.js"
+    },
+    "./jellyfin": {
+      "types": "./dist/src/jellyfin/index.d.ts",
+      "default": "./dist/src/jellyfin/index.js"
+    },
+    "./emby": {
+      "types": "./dist/src/emby/index.d.ts",
+      "default": "./dist/src/emby/index.js"
+    },
+    "./api": {
+      "types": "./dist/src/api/index.d.ts",
+      "default": "./dist/src/api/index.js"
+    }
+  }
+}

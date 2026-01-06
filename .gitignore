@@ -1,87 +1,41 @@
-# Ignore env values
-*.env
-
-# Ignore local exclusive files
-*.local
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
+node_modules/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-PIPFILE.lock
+bin/
+.pseudotv/
+.dizquetv*/
+.tunarr*/
+web/public/bundle.js
+*.orig
+package-lock.json
 
-# Virtual environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# IDEs and editors
+config/
 .vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-Thumbs.db
-
-# Docker
-.dockerignore
-docker-compose.override.yml
-
-# Logs
-*.log
-logs/
-
-# Cache and temporary files
-.cache/
-*.tmp
-*.temp
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Application specific
-# Backup files
-*.backup
-*.bak
-
-# Data directories that might contain sensitive information
-data/
-backups/
-
-# Runtime files
-*.pid
-*.sock
-
-# SQL
+build/
+log.txt
 *.db
-*.db-wal
-*.db-shm
+.DS_Store
+.turbo/
+*.env*
+*.tar*
+coverage/
+
+*.dmg
+*.app
+
+# Xcode
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcworkspace/contents.xcworkspacedata
+/*.gcno
+**/xcshareddata/WorkspaceSettings.xcsettings
+
+## Build generated
+build/
+DerivedData/
+
+
+# This is generated at runtime for dev builds.
+tunarr-openapi.json
+
+web/.tanstack

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build-dev": {
+      "dependsOn": ["^build"]
+    },
+    "clean-build": {
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "bundle": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "generate-client": {
+      "dependsOn": ["@tunarr/server#generate-openapi"],
+      "cache": false
+    }
+  }
+}
