@@ -1,3 +1,0 @@
-# Replicate
-
-TBD
