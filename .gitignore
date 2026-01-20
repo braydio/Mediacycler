@@ -4,10 +4,13 @@ bin/
 .pseudotv/
 .dizquetv*/
 .tunarr*/
+tunarr/
+tunarr_data/
 web/public/bundle.js
 *.orig
 package-lock.json
 
+*.pyc
 config/
 .vscode/
 build/
