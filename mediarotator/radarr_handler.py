@@ -1,12 +1,28 @@
 """Helpers for interacting with the Radarr API."""
 
 import os
+from pathlib import Path
 import requests
 
 from notifications import notify_change
 
+def _in_docker() -> bool:
+    if Path("/.dockerenv").exists():
+        return True
+    try:
+        return "docker" in Path("/proc/1/cgroup").read_text()
+    except Exception:
+        return False
+
+
+def _default_service_url(port: int) -> str:
+    if _in_docker():
+        return f"http://host.docker.internal:{port}"
+    return f"http://localhost:{port}"
+
+
 RADARR_API_KEY = os.getenv("RADARR_API_KEY")
-RADARR_URL = os.getenv("RADARR_URL", "http://localhost:7878")
+RADARR_URL = os.getenv("RADARR_URL", _default_service_url(7878))
 # Root folder used when adding new movies. Configure via env or rotator config.
 MOVIE_ROOT_FOLDER = os.getenv("MOVIE_ROOT_FOLDER", "/mnt/netstorage/Media/RotatingMovies")
 QUALITY_PROFILE_ID = int(os.getenv("RADARR_QUALITY_PROFILE_ID", "1"))  # default profile

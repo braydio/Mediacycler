@@ -10,13 +10,13 @@ mkdir -p "$OUTPUT_DIR"
 OUTPUT="$OUTPUT_DIR/${FILENAME}.mp4"
 HOSTNAME=$(uname -n)
 IS_PI=false
-IS_ARCH=false
+IS_X86=false
 
 # Detect system type
 if [[ "$(uname -m)" == "armv7l" || "$(uname -m)" == "aarch64" ]]; then
   IS_PI=true
-elif grep -qi arch /etc/os-release; then
-  IS_ARCH=true
+else
+  IS_X86=true
 fi
 
 # Detect codecs
@@ -54,9 +54,9 @@ if $IS_PI; then
   fi
 fi
 
-# --- On Arch: Transcode everything ---
-if $IS_ARCH; then
-  echo "[Arch] Transcoding $INPUT"
+# --- On x86: Transcode everything ---
+if $IS_X86; then
+  echo "[x86] Transcoding $INPUT"
   ffmpeg -hide_banner -loglevel warning \
     -i "$INPUT" \
     -c:v libx264 -preset slow -crf 23 \

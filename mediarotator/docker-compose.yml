@@ -4,7 +4,7 @@ services:
   # Always-on Services
   
   threadfin:
-    image: fyb3roptik/threadfin:${THREADFIN_IMAGE_TAG:-latest}
+    image: fyb3roptik/threadfin:latest
     container_name: mediacycler-threadfin
     environment:
       - TZ=America/New_York
@@ -19,7 +19,7 @@ services:
       - mediacycler
 
   trailarr:
-    image: nandyalu/trailarr:${TRAILARR_IMAGE_TAG:-latest}
+    image: nandyalu/trailarr:latest
     container_name: mediacycler-trailarr
     environment:
       - TZ=America/New_York
@@ -43,10 +43,10 @@ services:
     environment:
       - TZ=America/New_York
     ports:
-      - "8099:8099"
+      - "5000:5000"
     volumes:
-      - /mnt/netstorage/Media:/mnt/netstorage/Media:rw
-      - ./encodarr/logs:/app/logs
+      - /mnt/netstorage/Media:/media:rw
+      - ./Encodarr/logs:/app/logs
     restart: unless-stopped
     networks:
       - mediacycler
@@ -65,16 +65,12 @@ services:
       - RADARR_QUALITY_PROFILE_ID=${RADARR_QUALITY_PROFILE_ID}
       - SONARR_QUALITY_PROFILE_ID=${SONARR_QUALITY_PROFILE_ID}
       - SONARR_LANGUAGE_PROFILE_ID=${SONARR_LANGUAGE_PROFILE_ID}
-      - MOVIE_ROOT_FOLDER=${MOVIE_ROOT_FOLDER}
-      - SHOW_ROOT_FOLDER=${SHOW_ROOT_FOLDER}
     volumes:
       - mediarotator_cache:/root
       - ./last_media_change.txt:/app/last_media_change.txt
     restart: unless-stopped
     networks:
       - mediacycler
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   # Tunarr (Development Mode - typically not run via docker-compose in dev)
   # Uncomment if you want to run Tunarr in production mode

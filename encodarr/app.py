@@ -3,7 +3,8 @@ import subprocess
 import os
 
 app = Flask(__name__)
-ALERTS_LOG = "/home/braydenchaffee/Projects/encodarr/alerts_log.log"
+ALERTS_LOG = os.getenv("ALERTS_LOG", "/app/logs/alerts_log.log")
+FLASK_PORT = int(os.getenv("FLASK_PORT", "8099"))
 
 
 @app.route("/notify", methods=["POST"])
@@ -33,4 +34,4 @@ def notify():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8099)
+    app.run(host="0.0.0.0", port=FLASK_PORT)

@@ -19,14 +19,34 @@ import json
 # Add the MediaRotator directory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+def _load_env_fallback(env_path: Path) -> None:
+    if not env_path.exists():
+        return
+    try:
+        for raw_line in env_path.read_text().splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip("\"'")  # basic quote handling
+            if key:
+                os.environ.setdefault(key, value)
+    except Exception:
+        return
+
+
 try:
     from dotenv import load_dotenv
 except Exception:
     load_dotenv = None
 
 # Load environment variables from a local .env if available
+env_path = Path(__file__).parent / ".env"
 if load_dotenv:
-    load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+    load_dotenv(dotenv_path=env_path)
+else:
+    _load_env_fallback(env_path)
 
 from cache import (
     initialize_cache_db,
@@ -36,6 +56,7 @@ from cache import (
     get_oldest_entry,
 )
 from mdblist_fetcher import get_all_items_from_all_lists
+from prefs_loader import load_user_prefs
 from radarr_handler import lookup_movie, add_movie_to_radarr, delete_movie_by_imdb
 from sonarr_handler import lookup_show, add_show_to_sonarr, delete_show_by_tvdb
 
@@ -52,6 +73,12 @@ def _load_rotator_config() -> dict:
 
 def _get_dir_size_bytes(path: str) -> int:
     """Return total size in bytes for files under `path`. If path missing, return 0."""
+    if os.getenv("ROTATOR_DIR_SIZE_METHOD", "").lower() == "du":
+        try:
+            result = subprocess.check_output(["du", "-sb", path]).decode().split()[0]
+            return int(result)
+        except Exception:
+            pass
     try:
         total = 0
         for dirpath, dirnames, filenames in os.walk(path):
@@ -92,7 +119,7 @@ def check_required_env_vars():
     return True
 
 
-def add_new_media(dry_run=False, limit=None):
+def add_new_media(dry_run=False, limit=None, movie_limit=None, show_limit=None):
     """Add new media from MDBList to Radarr/Sonarr."""
     print("🔍 Fetching media from MDBList...")
 
@@ -123,6 +150,11 @@ def add_new_media(dry_run=False, limit=None):
             continue
 
         print(f"\n🎬 Processing {media_type}: {title} (from {list_name})")
+
+        if media_type == "movie" and movie_limit is not None and added_movies >= movie_limit:
+            continue
+        if media_type == "show" and show_limit is not None and added_shows >= show_limit:
+            continue
 
         if dry_run:
             print(
@@ -231,6 +263,7 @@ def rotate_media(
                 print(f"[DRY RUN] Would remove movie: {title}")
                 remove_from_cache(movie_id)
                 removed_movies += 1
+                continue
 
             if delete_movie_by_imdb(movie_id):
                 remove_from_cache(movie_id)
@@ -286,17 +319,18 @@ def rotate_media(
             show_id, title = oldest
             print(f"🗑️ Rotating oldest show: {title}")
 
-        if dry_run:
-            print(f"[DRY RUN] Would remove show: {title}")
-            remove_from_cache(show_id)
-            removed_shows += 1
+            if dry_run:
+                print(f"[DRY RUN] Would remove show: {title}")
+                remove_from_cache(show_id)
+                removed_shows += 1
+                continue
 
-        if delete_show_by_tvdb(show_id):
-            remove_from_cache(show_id)
-            removed_shows += 1
-        else:
-            # If deletion failed, remove from cache anyway to prevent stuck state
-            remove_from_cache(show_id)
+            if delete_show_by_tvdb(show_id):
+                remove_from_cache(show_id)
+                removed_shows += 1
+            else:
+                # If deletion failed, remove from cache anyway to prevent stuck state
+                remove_from_cache(show_id)
 
     print(f"\n🔄 Rotation Summary:")
     print(f"  Movies rotated: {removed_movies}")
@@ -355,14 +389,41 @@ def main():
     print("💾 Cache database initialized")
     # Load rotator config (disk limits, roots)
     rotator_cfg = _load_rotator_config()
-    movie_root = rotator_cfg.get("movie_root") or os.getenv("MOVIE_ROOT_FOLDER")
-    show_root = rotator_cfg.get("show_root") or os.getenv("SHOW_ROOT_FOLDER")
+    user_prefs = load_user_prefs(Path(__file__).parent)
+    movie_root = (
+        rotator_cfg.get("movie_root")
+        or user_prefs.get("paths", {}).get("jellyfin", {}).get("movies")
+        or os.getenv("MOVIE_ROOT_FOLDER")
+    )
+    show_root = (
+        rotator_cfg.get("show_root")
+        or user_prefs.get("paths", {}).get("jellyfin", {}).get("tv")
+        or os.getenv("SHOW_ROOT_FOLDER")
+    )
     movie_disk_limit = rotator_cfg.get("movie_disk_limit_gb")
     show_disk_limit = rotator_cfg.get("show_disk_limit_gb")
+    if movie_disk_limit is None:
+        max_tb = user_prefs.get("storage_limits", {}).get("movies", {}).get("max_size_tb")
+        if isinstance(max_tb, (int, float)):
+            movie_disk_limit = float(max_tb) * 1024
+    if show_disk_limit is None:
+        max_tb = user_prefs.get("storage_limits", {}).get("tv", {}).get("max_size_tb")
+        if isinstance(max_tb, (int, float)):
+            show_disk_limit = float(max_tb) * 1024
+
+    cadence = user_prefs.get("rotation_engine", {}).get("cadence", {})
+    per_run = cadence.get("max_additions_per_run", {}) if isinstance(cadence, dict) else {}
+    movie_add_limit = per_run.get("movies") if isinstance(per_run, dict) else None
+    show_add_limit = per_run.get("tv") if isinstance(per_run, dict) else None
 
     try:
         if not args.rotate_only:
-            add_new_media(dry_run=args.dry_run, limit=args.add_limit)
+            add_new_media(
+                dry_run=args.dry_run,
+                limit=args.add_limit,
+                movie_limit=movie_add_limit,
+                show_limit=show_add_limit,
+            )
 
         if not args.add_only:
             rotate_media(

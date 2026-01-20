@@ -28,6 +28,14 @@ Define remaining disk space to trigger deletions
   "show_disk_limit_gb": 50
 ```
 
+## Optional preference files
+
+`UserPrefs_Lists.yaml` can define list names for movies and TV (primary/spice). When present, the rotator will
+prefer those lists for MDBList (by list title) or Trakt (by list name) if a Trakt user is configured.
+
+`.userPrefs.yaml` can provide a Trakt user, list names, and optional storage/cadence defaults. The file may be
+stored as a fenced YAML block (```yaml ... ```).
+
 {
 
 "movie_root": "/mnt/netstorage/Media/RotatingMovies",

@@ -1,12 +1,28 @@
 """Helpers for interacting with the Sonarr API."""
 
 import os
+from pathlib import Path
 import requests
 
 from notifications import notify_change
 
+def _in_docker() -> bool:
+    if Path("/.dockerenv").exists():
+        return True
+    try:
+        return "docker" in Path("/proc/1/cgroup").read_text()
+    except Exception:
+        return False
+
+
+def _default_service_url(port: int) -> str:
+    if _in_docker():
+        return f"http://host.docker.internal:{port}"
+    return f"http://localhost:{port}"
+
+
 SONARR_API_KEY = os.getenv("SONARR_API_KEY")
-SONARR_URL = os.getenv("SONARR_URL", "http://localhost:8989")
+SONARR_URL = os.getenv("SONARR_URL", _default_service_url(8989))
 # Root folder used when adding new shows. Configure via env or rotator config.
 SHOW_ROOT_FOLDER = os.getenv("SHOW_ROOT_FOLDER", "/mnt/netstorage/Media/RotatingTV")
 QUALITY_PROFILE_ID = int(os.getenv("SONARR_QUALITY_PROFILE_ID", "1"))  # default profile
