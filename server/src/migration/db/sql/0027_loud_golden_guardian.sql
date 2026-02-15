@@ -1,1 +1,0 @@
-CREATE INDEX `credit_grouping_id_idx` ON `credit` (`grouping_id`);
