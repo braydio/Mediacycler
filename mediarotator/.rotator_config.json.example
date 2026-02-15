@@ -1,0 +1,9 @@
+{
+  "use_mdblist": false,
+  "movie_lists": ["trending"],
+  "show_lists": ["trending"],
+  "movie_root": "/mnt/netstorage/Media/RotatingMovies",
+  "show_root": "/mnt/netstorage/Media/RotatingShows",
+  "movie_disk_limit_gb": 100,
+  "show_disk_limit_gb": 50
+}

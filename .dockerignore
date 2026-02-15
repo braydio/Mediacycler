@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+*Dockerfile
+.dockerignore
+.git
+.gitignore
+bin
+*/*/dist*
+*/*/build*
+
+.pseudotv
+.dizquetv
+.tunarr
+threadfin/data
+threadfin/data/**
+**/authentication.json

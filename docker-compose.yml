@@ -1,0 +1,88 @@
+services:
+  # Updated to only include shelf and rotator
+  
+  mediarotator:
+    build:
+      context: ./mediarotator
+      dockerfile: Dockerfile
+    container_name: mediacycler-rotator
+    environment:
+      - TZ=America/New_York
+      - RADARR_API_KEY=${RADARR_API_KEY}
+      - SONARR_API_KEY=${SONARR_API_KEY}
+      - RADARR_URL=${RADARR_URL}
+      - SONARR_URL=${SONARR_URL}
+      - RADARR_QUALITY_PROFILE_ID=${RADARR_QUALITY_PROFILE_ID}
+      - SONARR_QUALITY_PROFILE_ID=${SONARR_QUALITY_PROFILE_ID}
+      - SONARR_LANGUAGE_PROFILE_ID=${SONARR_LANGUAGE_PROFILE_ID}
+      - MOVIE_ROOT_FOLDER=${MOVIE_ROOT_FOLDER}
+      - SHOW_ROOT_FOLDER=${SHOW_ROOT_FOLDER}
+      - SEEDBOX_SYNC_ENABLED=${SEEDBOX_SYNC_ENABLED}
+      - SEEDBOX_HOST=${SEEDBOX_HOST}
+      - SEEDBOX_USER=${SEEDBOX_USER}
+      - SEEDBOX_PORT=${SEEDBOX_PORT}
+      - SEEDBOX_MOVIES_PATH=${SEEDBOX_MOVIES_PATH}
+      - SEEDBOX_TV_PATH=${SEEDBOX_TV_PATH}
+      - SEEDBOX_MOVIES_DEST=${SEEDBOX_MOVIES_DEST}
+      - SEEDBOX_TV_DEST=${SEEDBOX_TV_DEST}
+      - SEEDBOX_CLEANUP_DELAY_HOURS=${SEEDBOX_CLEANUP_DELAY_HOURS}
+      - SEEDBOX_SSH_KEY_PATH=${SEEDBOX_SSH_KEY_PATH}
+      - SEEDBOX_SSH_STRICT_HOST_KEY_CHECKING=${SEEDBOX_SSH_STRICT_HOST_KEY_CHECKING}
+      - SEEDBOX_SSH_EXTRA_ARGS=${SEEDBOX_SSH_EXTRA_ARGS}
+    volumes:
+      - mediarotator_cache:/root
+      - ./last_media_change.txt:/app/last_media_change.txt
+      - /mnt/netstorage/Media:/mnt/netstorage/Media:rw
+      - /home/braydenchaffee/.ssh:/root/.ssh:rw
+    restart: unless-stopped
+    networks:
+      - mediacycler
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  shelf:
+    build:
+      context: .
+      dockerfile: Dockerfile.shelf
+    container_name: mediacycler-shelf
+    environment:
+      - TZ=America/New_York
+      - RADARR_API_KEY=${RADARR_API_KEY}
+      - SONARR_API_KEY=${SONARR_API_KEY}
+      - RADARR_URL=${RADARR_URL}
+      - SONARR_URL=${SONARR_URL}
+      - SEEDBOX_HOST=${SEEDBOX_HOST}
+      - SEEDBOX_USER=${SEEDBOX_USER}
+      - SEEDBOX_PORT=${SEEDBOX_PORT}
+      - SEEDBOX_SSH_KEY_PATH=${SEEDBOX_SSH_KEY_PATH}
+      - SEEDBOX_SSH_STRICT_HOST_KEY_CHECKING=${SEEDBOX_SSH_STRICT_HOST_KEY_CHECKING}
+      - SEEDBOX_SSH_EXTRA_ARGS=${SEEDBOX_SSH_EXTRA_ARGS}
+      - SEEDBOX_INCOMPLETE_MOVIES_PATH=${SEEDBOX_INCOMPLETE_MOVIES_PATH}
+      - SEEDBOX_INCOMPLETE_TV_PATH=${SEEDBOX_INCOMPLETE_TV_PATH}
+      - SEEDBOX_MOVIES_DEST=${SEEDBOX_MOVIES_DEST}
+      - SEEDBOX_TV_DEST=${SEEDBOX_TV_DEST}
+      - ROTATING_MOVIES_PATH=${ROTATING_MOVIES_PATH}
+      - ROTATING_TV_PATH=${ROTATING_TV_PATH}
+      - SHELF_STORE_PATH=/root/.cache/mediacycler/shelf_state.json
+    ports:
+      - "8100:8099"
+    volumes:
+      - shelf_cache:/root
+      - /mnt/netstorage/Media:/mnt/netstorage/Media:rw
+      - /home/braydenchaffee/.ssh:/root/.ssh:ro
+    restart: unless-stopped
+    networks:
+      - mediacycler
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  mediacycler:
+    driver: bridge
+    name: mediacycler_network
+
+volumes:
+  mediarotator_cache:
+    driver: local
+  shelf_cache:
+    driver: local
