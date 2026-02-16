@@ -41,6 +41,7 @@ def load_state() -> ShelfState:
                 else None
             ),
             poster_url=payload.get("poster_url"),
+            synopsis=payload.get("synopsis"),
             genres=list(payload.get("genres", []) or []),
             status=payload.get("status", "undecided"),
         )

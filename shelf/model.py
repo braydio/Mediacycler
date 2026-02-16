@@ -17,6 +17,7 @@ class ShelfItem:
     last_modified: float
     download_completed_at: float | None = None
     poster_url: str | None = None
+    synopsis: str | None = None
     genres: list[str] = field(default_factory=list)
     status: ShelfStatus = "undecided"
 

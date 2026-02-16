@@ -121,15 +121,16 @@ def _fetch_radarr_metadata(api_url: str, api_key: str) -> dict[str, dict]:
         path = movie.get("path")
         poster = _pick_poster(movie.get("images") or [], api_url, api_key)
         genres = movie.get("genres") or []
+        synopsis = movie.get("overview")
         if not path:
             continue
         norm = _normalize_path(path)
-        metadata[norm] = {"poster_url": poster, "genres": genres}
+        metadata[norm] = {"poster_url": poster, "genres": genres, "synopsis": synopsis}
         base = os.path.basename(norm)
         if base in basename_map:
             basename_map[base] = {}
         else:
-            basename_map[base] = {"poster_url": poster, "genres": genres}
+            basename_map[base] = {"poster_url": poster, "genres": genres, "synopsis": synopsis}
     for base, data_item in basename_map.items():
         if data_item:
             metadata[f"__base__:{base}"] = data_item
@@ -153,15 +154,16 @@ def _fetch_sonarr_metadata(api_url: str, api_key: str) -> dict[str, dict]:
         path = series.get("path")
         poster = _pick_poster(series.get("images") or [], api_url, api_key)
         genres = series.get("genres") or []
+        synopsis = series.get("overview")
         if not path:
             continue
         norm = _normalize_path(path)
-        metadata[norm] = {"poster_url": poster, "genres": genres}
+        metadata[norm] = {"poster_url": poster, "genres": genres, "synopsis": synopsis}
         base = os.path.basename(norm)
         if base in basename_map:
             basename_map[base] = {}
         else:
-            basename_map[base] = {"poster_url": poster, "genres": genres}
+            basename_map[base] = {"poster_url": poster, "genres": genres, "synopsis": synopsis}
     for base, data_item in basename_map.items():
         if data_item:
             metadata[f"__base__:{base}"] = data_item
@@ -349,6 +351,7 @@ def _attach_posters(items: list[ShelfItem]) -> list[ShelfItem]:
             replace(
                 item,
                 poster_url=data_item.get("poster_url"),
+                synopsis=data_item.get("synopsis"),
                 genres=list(data_item.get("genres") or []),
                 download_completed_at=float(completed_at) if completed_at is not None else None,
             )

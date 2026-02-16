@@ -407,6 +407,12 @@ def _html_template() -> str:
           <option value=\"neon-drive-in\">Neon Drive-In</option>
         </select>
       </label>
+      <label class=\"theme-control\" for=\"genre-filter\">
+        Genre
+        <select id=\"genre-filter\" onchange=\"onGenreChange(this.value)\">
+          <option value=\"all\">All Genres</option>
+        </select>
+      </label>
       <div class=\"stats\" id=\"stats\"></div>
     </div>
     <div class=\"layout\">
@@ -448,6 +454,7 @@ def _html_template() -> str:
     let comingNote = '';
     let selected = null;
     let syncEnabled = true;
+    let activeGenre = 'all';
     const themeMeta = {
       blockbuster: {
         marquee: 'Be Kind. Rewind.',
@@ -648,6 +655,48 @@ def _html_template() -> str:
       return order.map((genre) => ({ genre, items: groups[genre] }));
     }
 
+    function buildGenreFilterOptions() {
+      const selector = document.getElementById('genre-filter');
+      if (!selector) return;
+      const known = new Set();
+      items.forEach(item => {
+        (item.genres || []).forEach(genre => {
+          if (genre) known.add(String(genre));
+        });
+      });
+      const sorted = Array.from(known).sort((a, b) => a.localeCompare(b));
+      const current = activeGenre;
+      selector.innerHTML = '';
+      const allOption = document.createElement('option');
+      allOption.value = 'all';
+      allOption.textContent = 'All Genres';
+      selector.appendChild(allOption);
+      sorted.forEach(genre => {
+        const option = document.createElement('option');
+        option.value = genre;
+        option.textContent = genre;
+        selector.appendChild(option);
+      });
+      if (current !== 'all' && sorted.includes(current)) {
+        selector.value = current;
+      } else {
+        activeGenre = 'all';
+        selector.value = 'all';
+      }
+    }
+
+    function onGenreChange(value) {
+      activeGenre = value || 'all';
+      render();
+      footer(activeGenre === 'all' ? 'Showing all genres.' : `Filtered to ${activeGenre}.`);
+    }
+
+    function matchesGenre(item) {
+      if (activeGenre === 'all') return true;
+      const itemGenres = item.genres || [];
+      return itemGenres.includes(activeGenre);
+    }
+
     function buildCard(item) {
       const card = document.createElement('div');
       card.className = 'card';
@@ -679,10 +728,10 @@ def _html_template() -> str:
 
       const actions = document.createElement('div');
       actions.className = 'actions';
+      const deleteStatus = item.status === 'delete' ? 'undecided' : 'delete';
+      const deleteLabel = item.status === 'delete' ? 'Unmark Delete' : 'Mark Delete';
       actions.innerHTML = `
-        <button onclick=\"setStatus('${item.item_id}','keep')\">Keep</button>
-        <button onclick=\"setStatus('${item.item_id}','delete')\">Delete</button>
-        <button onclick=\"setStatus('${item.item_id}','defer')\">Defer</button>
+        <button onclick=\"setStatus('${item.item_id}','${deleteStatus}')\">${deleteLabel}</button>
         <button onclick=\"showDetailsById('${item.item_id}')\">Details</button>
       `;
 
@@ -700,6 +749,15 @@ def _html_template() -> str:
       const container = document.getElementById(containerId);
       container.innerHTML = '';
       const grouped = groupByGenre(kindItems);
+      if (!grouped.length) {
+        const empty = document.createElement('div');
+        empty.className = 'meta';
+        empty.textContent = activeGenre === 'all'
+          ? 'No items.'
+          : `No items in ${activeGenre}.`;
+        container.appendChild(empty);
+        return;
+      }
       grouped.forEach(({ genre, items: groupedItems }) => {
         const section = document.createElement('section');
         section.className = 'section';
@@ -719,15 +777,20 @@ def _html_template() -> str:
       items.forEach(item => {
         total += item.size_bytes || 0;
       });
+      buildGenreFilterOptions();
 
       renderFeatured();
       renderComing();
 
-      const movies = items.filter(item => item.kind === 'movie');
-      const tv = items.filter(item => item.kind === 'tv');
+      const filtered = items.filter(matchesGenre);
+      const filteredTotal = filtered.reduce((sum, item) => sum + (item.size_bytes || 0), 0);
+      const movies = filtered.filter(item => item.kind === 'movie');
+      const tv = filtered.filter(item => item.kind === 'tv');
       renderKindColumn('movies-grid', movies);
       renderKindColumn('tv-grid', tv);
-      document.getElementById('stats').textContent = `${items.length} items, ${formatSize(total)}`;
+      const label = activeGenre === 'all' ? 'all genres' : activeGenre;
+      document.getElementById('stats').textContent =
+        `${filtered.length}/${items.length} items (${label}), ${formatSize(filteredTotal)} shown, ${formatSize(total)} total`;
     }
 
     function highlight(card) {
@@ -826,14 +889,17 @@ def _html_template() -> str:
     async function applyDeletions() {
       const res = await fetch('/api/shelf/apply', { method: 'POST' });
       const data = await res.json();
-      footer(`Deleted ${data.deleted} item(s).`);
+      const failed = (data.results || []).filter(result => !result.deleted).length;
+      footer(`Deleted ${data.deleted} item(s). ${failed ? `${failed} failed.` : ''}`);
       refresh();
     }
 
     function showDetails(item) {
+      const synopsis = item.synopsis || 'No synopsis available.';
+      const genres = (item.genres && item.genres.length) ? item.genres.join(', ') : 'Uncategorized';
       document.getElementById('details-title').textContent = item.title;
       document.getElementById('details-body').textContent =
-        `Kind: ${item.kind}\nSize: ${formatSize(item.size_bytes)}\nDownload Completed: ${item.download_completed_at ? new Date(item.download_completed_at * 1000).toISOString() : 'Unknown'}\nLast Modified: ${new Date(item.last_modified * 1000).toISOString()}\nStatus: ${item.status}\nPath: ${item.path}`;
+        `Synopsis: ${synopsis}\n\nKind: ${item.kind}\nGenres: ${genres}\nSize: ${formatSize(item.size_bytes)}\nDownload Completed: ${item.download_completed_at ? new Date(item.download_completed_at * 1000).toISOString() : 'Unknown'}\nLast Modified: ${new Date(item.last_modified * 1000).toISOString()}\nStatus: ${item.status}\nPath: ${item.path}`;
       document.getElementById('details').classList.add('show');
     }
 

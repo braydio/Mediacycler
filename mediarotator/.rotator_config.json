@@ -3,7 +3,9 @@
   "movie_lists": ["trending"],
   "show_lists": ["trending"],
   "movie_root": "/mnt/netstorage/Media/RotatingMovies",
-  "show_root": "/mnt/netstorage/Media/RotatingShows",
+  "show_root": "/mnt/netstorage/Media/RotatingTV",
+  "movie_library_root": "/mnt/netstorage/Media/Movies",
+  "show_library_root": "/mnt/netstorage/Media/TV",
   "movie_disk_limit_gb": 2000,
   "show_disk_limit_gb": 2000
 }

@@ -12,10 +12,13 @@ This script manages rotating media by:
 import argparse
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
+import shutil
 from pathlib import Path
+from dataclasses import dataclass
 
 
 # Add the MediaRotator directory to Python path for imports
@@ -61,6 +64,13 @@ from mdblist_fetcher import get_all_items_from_all_lists
 from prefs_loader import load_user_prefs
 from radarr_handler import lookup_movie, add_movie_to_radarr, delete_movie_by_imdb
 from sonarr_handler import lookup_show, add_show_to_sonarr, delete_show_by_tvdb
+
+
+@dataclass
+class DuplicatePruneResult:
+    removed_movies: int = 0
+    removed_shows: int = 0
+    removed_paths: list[str] | None = None
 
 
 def _load_rotator_config() -> dict:
@@ -152,6 +162,99 @@ def _build_ssh_command(port: int, key_path: str | None, strict: str | None, extr
     if extra_args:
         cmd.extend(shlex.split(extra_args))
     return cmd
+
+
+def _normalize_media_name(name: str) -> str:
+    base = name.strip().lower()
+    # Strip common resolution/source noise from folder names.
+    base = re.sub(r"\b(2160p|1080p|720p|480p|x264|x265|h\.?264|h\.?265|hevc|web[- ]?dl|bluray|brrip)\b", "", base)
+    base = re.sub(r"[^a-z0-9]+", "", base)
+    return base
+
+
+def _is_within(path: str, root: str) -> bool:
+    norm_path = os.path.realpath(path)
+    norm_root = os.path.realpath(root)
+    return norm_path == norm_root or norm_path.startswith(norm_root + os.sep)
+
+
+def _list_library_entries(root: str | None) -> dict[str, str]:
+    if not root or not os.path.isdir(root):
+        return {}
+    entries: dict[str, str] = {}
+    try:
+        for name in os.listdir(root):
+            path = os.path.join(root, name)
+            if not os.path.exists(path):
+                continue
+            key = _normalize_media_name(name)
+            if key:
+                entries[key] = path
+    except OSError:
+        return {}
+    return entries
+
+
+def _delete_local_path(path: str, safe_root: str, dry_run: bool) -> bool:
+    if not os.path.exists(path):
+        return False
+    if not _is_within(path, safe_root):
+        print(f"⚠️ Refusing to delete path outside rotating root: {path}")
+        return False
+    if dry_run:
+        print(f"[DRY RUN] Would delete duplicate rotating path: {path}")
+        return True
+    try:
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
+        return True
+    except OSError as exc:
+        print(f"⚠️ Failed to delete duplicate path {path}: {exc}")
+        return False
+
+
+def _prune_rotating_duplicates(
+    movie_root: str | None,
+    show_root: str | None,
+    movie_library_root: str | None,
+    show_library_root: str | None,
+    dry_run: bool = False,
+) -> DuplicatePruneResult:
+    """
+    Remove items from rotating libraries if matching names already exist
+    in permanent libraries.
+    """
+    result = DuplicatePruneResult(removed_paths=[])
+
+    movie_library = _list_library_entries(movie_library_root)
+    movie_rotating = _list_library_entries(movie_root)
+    for key, rotate_path in movie_rotating.items():
+        if key not in movie_library:
+            continue
+        print(
+            f"🧹 Duplicate movie detected in rotating library: "
+            f"{rotate_path} (exists in {movie_library[key]})"
+        )
+        if movie_root and _delete_local_path(rotate_path, movie_root, dry_run):
+            result.removed_movies += 1
+            result.removed_paths.append(rotate_path)
+
+    show_library = _list_library_entries(show_library_root)
+    show_rotating = _list_library_entries(show_root)
+    for key, rotate_path in show_rotating.items():
+        if key not in show_library:
+            continue
+        print(
+            f"🧹 Duplicate show detected in rotating library: "
+            f"{rotate_path} (exists in {show_library[key]})"
+        )
+        if show_root and _delete_local_path(rotate_path, show_root, dry_run):
+            result.removed_shows += 1
+            result.removed_paths.append(rotate_path)
+
+    return result
 
 
 def _sync_seedbox_media(
@@ -258,7 +361,8 @@ def _sync_seedbox_media(
         if dry_run:
             print(f"[DRY RUN] Would run: {remote_cmd}")
             return
-        subprocess.run(ssh_cmd + ["bash", "-lc", remote_cmd], check=False)
+        # Run cleanup on the remote seedbox host.
+        subprocess.run(ssh_cmd + [f"{user}@{host}", "bash", "-lc", remote_cmd], check=False)
 
     movies_synced = _rsync_one("movies", movies_src, movies_dest)
     tv_synced = _rsync_one("tv", tv_src, tv_dest)
@@ -555,6 +659,16 @@ def main():
     )
     movie_disk_limit = rotator_cfg.get("movie_disk_limit_gb")
     show_disk_limit = rotator_cfg.get("show_disk_limit_gb")
+    movie_library_root = (
+        rotator_cfg.get("movie_library_root")
+        or os.getenv("MOVIES_LIBRARY_PATH")
+        or "/mnt/netstorage/Media/Movies"
+    )
+    show_library_root = (
+        rotator_cfg.get("show_library_root")
+        or os.getenv("TV_LIBRARY_PATH")
+        or "/mnt/netstorage/Media/TV"
+    )
     if movie_disk_limit is None:
         max_tb = user_prefs.get("storage_limits", {}).get("movies", {}).get("max_size_tb")
         if isinstance(max_tb, (int, float)):
@@ -597,6 +711,24 @@ def main():
                 movie_root=movie_root,
                 show_root=show_root,
                 dry_run=args.dry_run,
+            )
+
+        if do_sync or do_rotate:
+            print("\n🧭 Checking rotating libraries for duplicates in permanent libraries...")
+            print(f"  Rotating movie root: {movie_root}")
+            print(f"  Rotating show root: {show_root}")
+            print(f"  Permanent movie root: {movie_library_root}")
+            print(f"  Permanent show root: {show_library_root}")
+            prune = _prune_rotating_duplicates(
+                movie_root=movie_root,
+                show_root=show_root,
+                movie_library_root=movie_library_root,
+                show_library_root=show_library_root,
+                dry_run=args.dry_run,
+            )
+            print(
+                f"🧹 Duplicate prune summary: "
+                f"{prune.removed_movies} movie(s), {prune.removed_shows} show(s) removed from rotating library"
             )
 
         if do_rotate:
